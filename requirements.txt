@@ -7,3 +7,5 @@ SQLAlchemy
 
 python-dotenv
 gunicorn
+
+marshmallow
