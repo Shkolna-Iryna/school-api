@@ -1,0 +1,11 @@
+flask
+flask-cors
+python-dotenv
+openai
+SQLAlchemy
+flask_jwt_extended
+flask_sqlalchemy
+marshmallow
+auth
+requests
+python-dotenv
