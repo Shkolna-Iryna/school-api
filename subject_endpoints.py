@@ -51,3 +51,16 @@ def get_task(subject_id):
         "title": subject.title,
         "tasks": t_list
     })
+
+@subjects_bp.route("/subjects/<int:subject_id>", methods=["DELETE"])
+@jwt_required()
+def delete_subject(subject_id):
+    subject = Subject.query.get_or_404(subject_id)
+
+    db.session.delete(subject)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Subject deleted successfully",
+        "id": subject_id
+    }), 200

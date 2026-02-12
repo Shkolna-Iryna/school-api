@@ -25,7 +25,7 @@ def register():
         return jsonify({"msg": "Неправильні дані", "errors": e.messages}), 400
 
     if User.query.filter_by(email=data["email"]).first():
-        return jsonify({"msg": "Користувач вже зареєстрований"}), 400
+        return jsonify({"msg": " Цей користувач вже зареєстрований"}), 400
 
     user = User(
         name=data["name"],
