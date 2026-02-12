@@ -43,6 +43,7 @@ def handle_review_error(e: ContentNeedsReviewError):
 # --- DB та JWT ---
 db.init_app(app)
 jwt = JWTManager(app)
+from flask import send_from_directory
 
 # --- Blueprints ---
 app.register_blueprint(uploads_bp)

@@ -42,7 +42,9 @@ def get_answers():
                 "id": answer.user.id if answer.user else None,
                 "name": answer.user.name if answer.user else None
             },
-            "task_id": answer.task_id
+            "task_id": answer.task_id,
+            "image_url": json.loads(answer.image_url) if answer.image_url else [],
+
         })
 
     return jsonify(answers_list) 

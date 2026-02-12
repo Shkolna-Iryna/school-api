@@ -1,14 +1,12 @@
 import os
-from flask import Blueprint, send_from_directory, jsonify
+from flask import Blueprint, send_from_directory, jsonify, current_app
 
 uploads_bp = Blueprint("uploads_bp", __name__)
 
-UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
-
-
-@uploads_bp.route("/uploads/<filename>", methods=["GET"])
+@uploads_bp.route("/uploads/<filename>")
 def get_uploaded_file(filename):
     try:
-        return send_from_directory(UPLOAD_FOLDER, filename)
+        upload_folder = current_app.config["UPLOADS"]
+        return send_from_directory(upload_folder, filename)
     except FileNotFoundError:
         return jsonify({"error": "File not found"}), 404

@@ -42,4 +42,4 @@ class Answer(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', lazy='select')
-    image_url = db.Column(db.Text, nullable = True)
+    image_url = db.Column(db.JSON, nullable=True)
