@@ -22,10 +22,10 @@ def register():
     try:
        data = register_schema.load(request.get_json(silent=True) or {})
     except ValidationError as e:
-        return jsonify({"msg": "Validation error", "errors": e.messages}), 400
+        return jsonify({"msg": "Неправильні дані", "errors": e.messages}), 400
 
     if User.query.filter_by(email=data["email"]).first():
-        return jsonify({"msg": "User already exists"}), 400
+        return jsonify({"msg": "Користувач вже зареєстрований"}), 400
 
     user = User(
         name=data["name"],
