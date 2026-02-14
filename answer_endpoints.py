@@ -60,10 +60,6 @@ def create_answers_with_photos():
     task_id = request.form.get("task_id")
     files = request.files.getlist("photos")
 
-    # answer_text = data.get("answer")
-    # task_id = data.get("task_id")
-    # files = request.files.getlist("photos")
-
     if not answer_text or not task_id:
         return jsonify({"error": "answer і task_id є обовʼязковими"}), 400
 
