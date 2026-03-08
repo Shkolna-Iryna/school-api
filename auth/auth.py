@@ -29,13 +29,14 @@ def register():
 
     user = User(
         name=data["name"],
-        email=data["email"]
+        email=data["email"],
+        role=data.get("role", "student")
     )
     user.set_password(data["password"])
 
     db.session.add(user)
     db.session.commit()
-    access_token = create_access_token(identity=str(user.id))
+    access_token = create_access_token(identity=str(user.id), additional_claims={"role": user.role})
 
 
     return jsonify({
@@ -44,7 +45,8 @@ def register():
         "user": {
             "id": user.id,
             "name": user.name, 
-            "email": user.email
+            "email": user.email,
+            "role": user.role
         }}), 201
 
 @auth_bp.route("/login", methods=["POST"])
@@ -59,14 +61,20 @@ def login():
     if not user or not user.check_password(data["password"]):
         return jsonify({"msg": "Invalid credentials"}), 401
 
-    access_token = create_access_token(identity=str(user.id))
+    access_token = create_access_token(
+        identity=str(user.id),
+        additional_claims={
+            "role": user.role
+        }
+    )
 
     return jsonify({
         "access_token": access_token,
         "user": {
             "id": user.id,
             "name": user.name,
-            "email": user.email
+            "email": user.email,
+            "role": user.role
         }
     })
 
