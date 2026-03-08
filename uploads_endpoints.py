@@ -10,3 +10,6 @@ def get_uploaded_file(filename):
         return send_from_directory(upload_folder, filename)
     except FileNotFoundError:
         return jsonify({"error": "File not found"}), 404
+import os
+from flask import Blueprint, send_from_directory, current_app, jsonify
+

@@ -9,6 +9,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False) 
     email = db.Column(db.String(150), nullable=False)
     password = db.Column(db.String, nullable=False)
+    role = db.Column(db.String(20), nullable = False)
     tasks = db.relationship("Task", backref='user', lazy='select')  
     
     def set_password(self, password):
@@ -33,6 +34,7 @@ class Task(db.Model):
     answers = db.relationship('Answer', backref='task', lazy='select', foreign_keys='Answer.task_id')
     correct_answer = db.relationship('Answer', foreign_keys=[correct_answer_id], post_update=True)
     image_url = db.Column(db.JSON, nullable=True)
+    voice_url = db.Column(db.String, nullable = True)
    
 
 class Answer(db.Model):
@@ -43,3 +45,5 @@ class Answer(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', lazy='select')
     image_url = db.Column(db.JSON, nullable=True)
+    voice_url = db.Column(db.String, nullable = True)
+

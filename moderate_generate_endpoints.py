@@ -9,7 +9,7 @@ import json
 import uuid
 
 
-load_dotenv()  # <
+load_dotenv()  
 ai_bp = Blueprint("ai", __name__)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -78,15 +78,14 @@ def generate_test(task_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # 🔥 Генеруємо test_id
+   
     test_id = str(uuid.uuid4())
 
-    # 🔥 Зберігаємо правильні індекси в пам'яті
+    
     active_tests[test_id] = [
         t["correct_index"] for t in result["tests"]
     ]
 
-    # 🔥 Видаляємо correct_index перед відправкою на фронт
     for t in result["tests"]:
         t.pop("correct_index", None)
 

@@ -29,6 +29,8 @@ def allowed_file(filename: str) -> bool:
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
+
 @tasks_bp.route("/tasks", methods=["GET"])
 @jwt_required()
 def get_tasks():
@@ -61,6 +63,7 @@ def get_tasks():
             "task": task.task,
             "correct_answer_id": task.correct_answer_id,
             "image_url": json.loads(task.image_url) if task.image_url else [],
+            "voice_url": task.voice_url,
             "user": {
                 "id": task.user.id if task.user else None,
                 "name": task.user.name if task.user else None
@@ -68,6 +71,9 @@ def get_tasks():
         })   
 
     return jsonify({"count":count, "items":items})
+
+
+
 @tasks_bp.route("/tasks", methods=["POST"])
 @jwt_required()
 def create_task_with_photos():
@@ -76,6 +82,7 @@ def create_task_with_photos():
     task_text = request.form.get("task")
     subject_id = request.form.get("subject_id")
     files = request.files.getlist("photos")
+    voice_files = request.files.getlist("voice") 
 
     if not task_text or not subject_id:
         return jsonify({"error": "task і subject_id обовʼязкові"}), 400
@@ -95,12 +102,23 @@ def create_task_with_photos():
 
     image_url = json.dumps(saved_files)
 
-    # new_task створюється завжди, після циклу
+
+    voice_url = None
+    if voice_files:
+        voice_file = voice_files[0]  
+        if voice_file.filename != "":
+            ext = os.path.splitext(voice_file.filename)[1]
+            filename = secure_filename(f"{uuid.uuid4().hex}{ext}")
+            path = os.path.join(upload_folder, filename)
+            voice_file.save(path)
+            voice_url = filename
+
     new_task = Task(
         task=task_text,
         user_id=user_id,
         subject_id=int(subject_id),
-        image_url=image_url
+        image_url=image_url,
+        voice_url=voice_url
     )
 
     db.session.add(new_task)
@@ -109,8 +127,11 @@ def create_task_with_photos():
     return jsonify({
         "msg": "Task created",
         "id": new_task.id,
-        "image_url": image_url
+        "image_url": image_url,
+        "voice_url": voice_url
     }), 201
+
+    
 
 
 @tasks_bp.route("/tasks/<int:task_id>", methods=["GET"])

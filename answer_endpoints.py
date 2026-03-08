@@ -15,7 +15,7 @@ def allowed_file(filename: str) -> bool:
         return False
     if "." not in filename:
         return False
-    ext = filename.rsplit(".", 1)[1].lower()  # Отримуємо розширення файлу
+    ext = filename.rsplit(".", 1)[1].lower() 
     return ext in ALLOWED_EXTENSIONS
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
@@ -82,7 +82,7 @@ def create_answers_with_photos():
         answer=answer_text,
         task_id=task_id,
         user_id=user_id,
-        image_url=image_url  # Зберігаємо шляхи до файлів у базі даних
+        image_url=image_url  
     )
 
     db.session.add(new_answer)
