@@ -1,5 +1,5 @@
 from flask import Blueprint, Flask, app, current_app, jsonify, request
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 from sqlalchemy import func
 import os
 from errors.content_review_error import ContentNeedsReviewError
@@ -9,12 +9,11 @@ from werkzeug.utils import secure_filename
 import uuid
 from flask import send_from_directory
 import json
+from auth.decorators import roles_required
 
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-tasks_bp = Blueprint('tasks', __name__)  
+tasks_bp = Blueprint('tasks', __name__) 
+
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 def allowed_file(filename: str) -> bool:
@@ -28,7 +27,6 @@ def allowed_file(filename: str) -> bool:
     return ext in ALLOWED_EXTENSIONS
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 
 
 @tasks_bp.route("/tasks", methods=["GET"])
@@ -66,7 +64,8 @@ def get_tasks():
             "voice_url": task.voice_url,
             "user": {
                 "id": task.user.id if task.user else None,
-                "name": task.user.name if task.user else None
+                "name": task.user.name if task.user else None,
+                "role": task.user.role if task.user.role else None
             }
         })   
 
@@ -102,7 +101,6 @@ def create_task_with_photos():
 
     image_url = json.dumps(saved_files)
 
-
     voice_url = None
     if voice_files:
         voice_file = voice_files[0]  
@@ -128,7 +126,7 @@ def create_task_with_photos():
         "msg": "Task created",
         "id": new_task.id,
         "image_url": image_url,
-        "voice_url": voice_url
+        "voice_url": voice_url,
     }), 201
 
     
@@ -185,3 +183,67 @@ def set_correct_answer(task_id):
     return jsonify({"ok": True, "correct_answer_id": task.correct_answer_id})
 
 
+@tasks_bp.route("/tasks/<int:task_id>", methods=["DELETE"])
+@jwt_required()
+def delete_task(task_id):
+    user_id = int(get_jwt_identity())
+    claims = get_jwt()  # отримуємо додаткові дані з токена
+    role = claims.get("role", "user")  # наприклад, "admin" або "user"
+
+    task = Task.query.get_or_404(task_id)
+
+    # Перевірка, що користувач є власником або адміністратором
+    if task.user_id != user_id and role != "admin":
+        return jsonify({"error": "Only task owner or admin can delete this task"}), 403
+
+    upload_folder = os.path.join(os.getcwd(), "uploads")
+
+    # --- Видалення відповідей разом з їх файлами ---
+    for answer in task.answers:
+        # Видалення зображень
+        if answer.image_url:
+            try:
+                images = json.loads(answer.image_url)
+                for img_filename in images:
+                    path = os.path.join(upload_folder, img_filename)
+                    if os.path.exists(path):
+                        os.remove(path)
+            except Exception as e:
+                current_app.logger.error(f"Error deleting answer images: {e}")
+
+        # Видалення голосового файлу
+        if answer.voice_url:
+            path = os.path.join(upload_folder, answer.voice_url)
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    current_app.logger.error(f"Error deleting answer voice file: {e}")
+
+        # Видалення запису відповіді з бази
+        db.session.delete(answer)
+
+    # --- Видалення файлів завдання ---
+    if task.image_url:
+        try:
+            images = json.loads(task.image_url)
+            for img_filename in images:
+                path = os.path.join(upload_folder, img_filename)
+                if os.path.exists(path):
+                    os.remove(path)
+        except Exception as e:
+            current_app.logger.error(f"Error deleting task images: {e}")
+
+    if task.voice_url:
+        path = os.path.join(upload_folder, task.voice_url)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except Exception as e:
+                current_app.logger.error(f"Error deleting task voice file: {e}")
+
+    # Видалення самого завдання
+    db.session.delete(task)
+    db.session.commit()
+
+    return jsonify({"msg": f"Task {task_id} and its answers deleted"}), 200

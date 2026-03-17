@@ -1,11 +1,14 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from models import Subject, db
+from auth.decorators import roles_required
+
 
 subjects_bp = Blueprint("subjects", __name__)
 
 @subjects_bp.route("/subjects", methods=["POST"])
 @jwt_required()
+@roles_required("admin", "teacher")
 def create_subject():
     data = request.get_json()
 

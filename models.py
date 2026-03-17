@@ -31,10 +31,11 @@ class Task(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
     correct_answer_id = db.Column(db.Integer, db.ForeignKey('answers.id'), nullable=True, unique=True)
-    answers = db.relationship('Answer', backref='task', lazy='select', foreign_keys='Answer.task_id')
-    correct_answer = db.relationship('Answer', foreign_keys=[correct_answer_id], post_update=True)
     image_url = db.Column(db.JSON, nullable=True)
     voice_url = db.Column(db.String, nullable = True)
+    answers = db.relationship('Answer', backref='task', lazy='select', foreign_keys='Answer.task_id')
+    correct_answer = db.relationship('Answer', foreign_keys=[correct_answer_id], post_update=True)
+    
    
 
 class Answer(db.Model):

@@ -1,9 +1,11 @@
 import os
 from flask import Blueprint, send_from_directory, jsonify, current_app
+from flask_jwt_extended import jwt_required
 
 uploads_bp = Blueprint("uploads_bp", __name__)
 
 @uploads_bp.route("/uploads/<filename>")
+@jwt_required()
 def get_uploaded_file(filename):
     try:
         upload_folder = current_app.config["UPLOADS"]

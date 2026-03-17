@@ -7,11 +7,51 @@ import os
 from models import Task, db
 import json
 import uuid
+import base64
 
 
 load_dotenv()  
 ai_bp = Blueprint("ai", __name__)
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+@ai_bp.route("/ai/moderate-image", methods=["POST"])
+def moderate_image():
+    # Перевіряємо, що файл передано
+    if "image" not in request.files:
+        return jsonify({"error": "Фото не передано"}), 400
+
+    image = request.files["image"]
+
+    try:
+        image_bytes = image.read()
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+        response = client.responses.create(
+            model="gpt-4.1-mini",
+            input=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": "Перевір, чи містить це фото заборонений або небезпечний контент, та нецензурну лексику. Відповідай тільки true або false."
+                    },
+                    {
+                        "type": "input_image",
+                        "image_url": f"data:image/jpeg;base64,{image_base64}"
+                    }
+                ]
+            }]
+        )
+
+        result_text = response.output_text.lower()
+        flagged = "true" in result_text
+
+        return jsonify({"flagged": flagged})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @ai_bp.route("/ai/moderation", methods=["POST"])
 @jwt_required()
@@ -31,6 +71,7 @@ def moderate_text_api():
 
 
 active_tests = {}
+
 @ai_bp.route("/generate/<int:task_id>", methods=["GET"])
 @jwt_required()
 def generate_test(task_id):
@@ -41,14 +82,8 @@ def generate_test(task_id):
         return jsonify({"message": "Task not found"}), 404
 
     prompt = f"""
-    На основі цього питання:
-
-    {task.task}
-
-    Згенеруй 5 тестових питань.
-
-    Поверни СТРОГО JSON у форматі:
-
+    На основі цього питання: {task.task} Згенеруй 5 тестових питань.
+    Поверни СТРОГО у JSON  форматі:
     {{
       "tests": [
         {{
@@ -93,7 +128,39 @@ def generate_test(task_id):
         "test_id": test_id,
         "tests": result["tests"]
     })
+@ai_bp.route("/ai/moderate-voice", methods=["POST"])
+@jwt_required()
+def moderate_voice():
+    if "audio" not in request.files:
+        return jsonify({"error": "Аудіо не передано"}), 400
 
+    audio_file = request.files["audio"]
+    temp_path = f"./temp_{uuid.uuid4()}.wav"
+    audio_file.save(temp_path)
+
+    try:
+        # 1. Транскрибуємо аудіо
+        with open(temp_path, "rb") as f:
+            transcript_response = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=f
+            )
+        transcript = transcript_response.text
+
+        # 2. Модеруємо текст
+        flagged = moderate_text(transcript)
+
+        return jsonify({
+            "flagged": flagged,
+            "transcript": transcript
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+       
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 @ai_bp.route("/check/<string:test_id>", methods=["POST"])
 @jwt_required()
 def check_test(test_id):

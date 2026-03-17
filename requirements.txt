@@ -9,3 +9,4 @@ marshmallow
 auth
 requests
 python-dotenv
+pillow
